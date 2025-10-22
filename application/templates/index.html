@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dự đoán GDP quốc gia</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+  <div class="container py-5">
+    <div class="card shadow-lg mx-auto" style="max-width: 700px;">
+      <div class="card-body">
+        <h3 class="text-center text-primary mb-4">🌍 Dự đoán GDP cho TẤT CẢ quốc gia</h3>
+
+        <form id="predictForm">
+          <div class="mb-3">
+            <label class="form-label">Năm</label>
+            <input type="number" id="year" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Lao động Nông nghiệp (%)</label>
+            <input type="number" id="agri" step="0.01" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Lao động Công nghiệp (%)</label>
+            <input type="number" id="ind" step="0.01" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Lao động Dịch vụ (%)</label>
+            <input type="number" id="serv" step="0.01" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Tỷ lệ thất nghiệp (%)</label>
+            <input type="number" id="unemp" step="0.01" class="form-control" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Dự đoán GDP cho tất cả quốc gia</button>
+        </form>
+
+        <div id="result" class="mt-4"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('predictForm');
+    const resultDiv = document.getElementById('result');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+        year: parseInt(document.getElementById('year').value),
+        labor_agriculture: parseFloat(document.getElementById('agri').value),
+        labor_industry: parseFloat(document.getElementById('ind').value),
+        labor_services: parseFloat(document.getElementById('serv').value),
+        unemployment_rate: parseFloat(document.getElementById('unemp').value)
+      };
+
+      try {
+        const response = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          let html = `
+            <h5 class="text-center text-success mt-3">Kết quả dự đoán GDP cho năm ${result.year}</h5>
+            <table class="table table-striped mt-3">
+              <thead><tr><th>Quốc gia</th><th>GDP dự đoán (USD)</th></tr></thead>
+              <tbody>
+          `;
+
+          result.results.forEach(row => {
+            html += `<tr><td>${row.Country}</td><td>${row.Predicted_GDP_USD.toLocaleString()}</td></tr>`;
+          });
+
+          html += `</tbody></table>`;
+          resultDiv.innerHTML = html;
+        } else {
+          resultDiv.innerHTML = `<div class="alert alert-danger text-center">❌ ${result.error}</div>`;
+        }
+      } catch (err) {
+        resultDiv.innerHTML = `<div class="alert alert-danger text-center">⚠️ Lỗi kết nối đến server.</div>`;
+      }
+    });
+  </script>
+
+</body>
+</html>
